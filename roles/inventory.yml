@@ -1,0 +1,12 @@
+
+[kube-node]
+35.174.154.192  ansible_user=ec2-user 
+
+#[kube-master]
+#3.86.76.76    ansible_user=ec2-user
+
+[webserver:children]
+kube-node
+
+[all:vars]
+master="52.91.101.43"

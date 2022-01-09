@@ -1,0 +1,36 @@
+---
+- name: check if reboot required after kernel update.
+  shell: KERNEL_NEW=$(rpm -q --last kernel |head -1 | awk '{print $1}' | sed 's/kernel-//'); KERNEL_NOW=$(uname -r); if [[ $KERNEL_NEW != $KERNEL_NOW ]]; then echo "reboot_not_needed"; else echo "reboot_needed"; fi
+  ignore_errors: true
+  register: reboot_required
+  #  delegate_to: "{{ groups['kube-node'] }}"
+
+- name: Get the node's details
+  shell: kubectl get nodes |grep worker-node |awk '{print $2}'
+  register: node_status
+  delegate_to: "{{master}}"
+  failed_when: false
+  changed_when: false
+  tags: 
+    - a
+
+- name: node output
+  debug:
+    msg: "status of worker_node is '{{ node_status.stdout }}'"
+
+
+    #- name: drain the node when status is ready
+    #  include_tasks: drain.yml
+    #  when: node_status.stdout == "Ready"
+
+- name: drain, reboot and uncordon the node
+  when: node_status.stdout == "Ready" and reboot_required.stdout == "reboot_needed"
+  block:
+     - name: drain the node
+       include_tasks: drain.yml
+     - name: reboot the node
+       include_tasks: reboot.yml
+
+- name: uncordon the node
+  include_tasks: uncordon.yml   
+

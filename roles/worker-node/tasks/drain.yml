@@ -1,0 +1,5 @@
+- name: Drain node
+  shell: kubectl drain worker-node --ignore-daemonsets --force
+  # delegate_to: "{{ groups['kube-master'][0] }}"
+  delegate_to: "{{master}}"
+  changed_when: false
